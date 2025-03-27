@@ -3,6 +3,7 @@ import Logo from "./extensions/logo.svg";
 
 export default {
   config: {
+    locales: [],
     auth: {
       logo: Logo,
     },
@@ -19,34 +20,18 @@ export default {
         "app.components.LeftMenu.navbrand.title": "Dashboard",
       },
     },
-    locales: [
-      // 'ar',
-      // 'fr',
-      // 'cs',
-      // 'de',
-      // 'dk',
-      // 'es',
-      // 'he',
-      // 'id',
-      // 'it',
-      // 'ja',
-      // 'ko',
-      // 'ms',
-      // 'nl',
-      // 'no',
-      // 'pl',
-      // 'pt-BR',
-      // 'pt',
-      // 'ru',
-      // 'sk',
-      // 'sv',
-      // 'th',
-      // 'tr',
-      // 'uk',
-      // 'vi',
-      // 'zh-Hans',
-      // 'zh',
-    ],
+    theme: {
+      light: {},
+      dark: {
+        colors: {
+          primary100: "#030415",
+          primary600: "#f231a5",
+          primary700: "#f231a5",
+          neutral0: "#0d102f",
+          neutral100: "#030415",
+        },
+      },
+    },
   },
   bootstrap() {},
 };
