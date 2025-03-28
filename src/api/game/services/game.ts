@@ -13,55 +13,75 @@ const developerService = "api::developer.developer";
 const categoryService = "api::category.category";
 const platformService = "api::platform.platform";
 
+function timeout(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function Exception(e) {
+  return { e, data: e.data && e.data.errors && e.data.errors };
+}
+
 async function getGameInfo(slug) {
-  const gogSlug = slug.replaceAll("-", "_").toLowerCase();
+  try {
+    const gogSlug = slug.replaceAll("-", "_").toLowerCase();
 
-  const body = await axios.get(`https://www.gog.com/game/${gogSlug}`);
+    const body = await axios.get(`https://www.gog.com/game/${gogSlug}`);
 
-  const dom = new JSDOM(body.data);
+    const dom = new JSDOM(body.data);
 
-  const raw_description = dom.window.document.querySelector(".description");
+    const raw_description = dom.window.document.querySelector(".description");
 
-  const description = raw_description.innerHTML;
+    const description = raw_description.innerHTML;
 
-  const short_description = raw_description.textContent.slice(0, 160);
+    const short_description = raw_description.textContent.slice(0, 160);
 
-  const ratingElement = dom.window.document.querySelector(
-    ".age-restrictions__icon use"
-  );
+    const ratingElement = dom.window.document.querySelector(
+      ".age-restrictions__icon use"
+    );
 
-  return {
-    description,
-    short_description,
-    rating: ratingElement
-      ? ratingElement
-          .getAttribute("xlink:href")
-          .replace(/_/, "")
-          .replace("#", "")
-      : "BR0",
-  };
+    return {
+      description,
+      short_description,
+      rating: ratingElement
+        ? ratingElement
+            .getAttribute("xlink:href")
+            .replace(/_/, "")
+            .replace("#", "")
+        : "BR0",
+    };
+  } catch (error) {
+    console.log("getGameInfo:", Exception(error));
+  }
 }
 
 async function getByName(name, entityService) {
-  const item = await strapi.service(entityService).find({
-    filters: { name },
-  });
+  try {
+    const item = await strapi.service(entityService).find({
+      filters: { name },
+    });
 
-  return item.results.length > 0 ? item.results[0] : null;
+    return item.results.length > 0 ? item.results[0] : null;
+  } catch (error) {
+    console.log("getByName:", Exception(error));
+  }
 }
 
 async function create(name, entityService) {
-  if (!name || !entityService) return;
+  try {
+    if (!name || !entityService) return;
 
-  const item = await getByName(name, entityService);
+    const item = await getByName(name, entityService);
 
-  if (!item) {
-    await strapi.service(entityService).create({
-      data: {
-        name,
-        slug: slugify(name, { strict: true, lower: true }),
-      },
-    });
+    if (!item) {
+      await strapi.service(entityService).create({
+        data: {
+          name,
+          slug: slugify(name, { strict: true, lower: true }),
+        },
+      });
+    }
+  } catch (error) {
+    console.log("create:", Exception(error));
   }
 }
 
@@ -117,14 +137,18 @@ async function setImage({ image, game, field = "cover" }) {
 
   console.log(`Uploading ${field} image: ${game.slug}.jpg`);
 
-  await axios({
-    method: "POST",
-    url: `http://localhost:1337/api/upload/`,
-    data: formData,
-    headers: {
-      "Content-Type": `multipart/form-data; boundary=${formData._boundary}`,
-    },
-  });
+  try {
+    await axios({
+      method: "POST",
+      url: `http://localhost:1337/api/upload/`,
+      data: formData,
+      headers: {
+        "Content-Type": `multipart/form-data; boundary=${formData._boundary}`,
+      },
+    });
+  } catch (error) {
+    console.log("setImage:", Exception(error));
+  }
 }
 
 async function createGames(products) {
@@ -186,34 +210,18 @@ async function createGames(products) {
 
 export default factories.createCoreService(gameService, () => ({
   async populate(params) {
-    const gogApiUrl = `https://catalog.gog.com/v1/catalog?limit=48&order=desc%3atrending`;
+    try {
+      const gogApiUrl = `https://catalog.gog.com/v1/catalog?limit=48&order=desc%3atrending`;
 
-    const {
-      data: { products },
-    } = await axios.get(gogApiUrl);
+      const {
+        data: { products },
+      } = await axios.get(gogApiUrl);
 
-    await createManyToManyData([
-      products[0],
-      products[1],
-      products[2],
-      products[3],
-      products[4],
-      products[5],
-      products[6],
-      products[7],
-    ]);
+      await createManyToManyData(products);
 
-    await createGames([
-      products[0],
-      products[1],
-      products[2],
-      products[3],
-      products[4],
-      products[5],
-      products[6],
-      products[7],
-    ]);
-
-    // console.log(getGameInfo(products[2].slug));
+      await createGames(products);
+    } catch (error) {
+      console.log("populate:", Exception(error));
+    }
   },
 }));
