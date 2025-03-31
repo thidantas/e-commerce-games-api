@@ -5,6 +5,7 @@
 import axios from "axios";
 import slugify from "slugify";
 import { JSDOM } from "jsdom";
+import qs from "querystring";
 import { factories } from "@strapi/strapi";
 
 const gameService = "api::game.game";
@@ -45,7 +46,7 @@ async function getGameInfo(slug) {
       rating: ratingElement
         ? ratingElement
             .getAttribute("xlink:href")
-            .replace(/_/, "")
+            .replace(/_/g, "")
             .replace("#", "")
         : "BR0",
     };
@@ -68,8 +69,6 @@ async function getByName(name, entityService) {
 
 async function create(name, entityService) {
   try {
-    if (!name || !entityService) return;
-
     const item = await getByName(name, entityService);
 
     if (!item) {
@@ -135,7 +134,7 @@ async function setImage({ image, game, field = "cover" }) {
   formData.append("field", field);
   formData.append("files", buffer, { filename: `${game.slug}.jpg` });
 
-  console.log(`Uploading ${field} image: ${game.slug}.jpg`);
+  console.info(`Uploading ${field} image: ${game.slug}.jpg`);
 
   try {
     await axios({
@@ -157,7 +156,7 @@ async function createGames(products) {
       const item = await getByName(product.title, gameService);
 
       if (!item) {
-        console.log(`Creating: ${product.title}...`);
+        console.info(`Creating: ${product.title}...`);
 
         const game = await strapi.service(`${gameService}`).create({
           data: {
@@ -211,7 +210,7 @@ async function createGames(products) {
 export default factories.createCoreService(gameService, () => ({
   async populate(params) {
     try {
-      const gogApiUrl = `https://catalog.gog.com/v1/catalog?limit=48&order=desc%3atrending`;
+      const gogApiUrl = `https://catalog.gog.com/v1/catalog?${qs.stringify(params)}`;
 
       const {
         data: { products },
